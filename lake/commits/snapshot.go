@@ -3,11 +3,14 @@ package commits
 import (
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/brimdata/zed/expr/extent"
 	"github.com/brimdata/zed/lake/data"
 	"github.com/brimdata/zed/lake/index"
 	"github.com/brimdata/zed/order"
+	"github.com/brimdata/zed/zngbytes"
+	"github.com/brimdata/zed/zson"
 	"github.com/segmentio/ksuid"
 )
 
@@ -199,6 +202,66 @@ func (s *Snapshot) Copy() *Snapshot {
 	out.indexes = s.indexes.Copy()
 	out.deletedIndexes = s.deletedIndexes.Copy()
 	return out
+}
+
+func (s *Snapshot) serialize() ([]byte, error) {
+	zs := zngbytes.NewSerializer()
+	zs.Decorate(zson.StylePackage)
+	for k, v := range s.objects {
+		if err := zs.Write(&Add{Commit: k, Object: *v}); err != nil {
+			return nil, err
+		}
+	}
+	for k, v := range s.deletedObjects {
+		if err := zs.Write(&Add{Commit: k, Object: *v}); err != nil {
+			return nil, err
+		}
+		if err := zs.Write(&Delete{Commit: k, ID: v.ID}); err != nil {
+			return nil, err
+		}
+	}
+	for k, v := range s.indexes {
+		for _, v2 := range v {
+			if err := zs.Write(&AddIndex{Commit: k, Object: *v2}); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for k, v := range s.deletedIndexes {
+		for _, v2 := range v {
+			if err := zs.Write(&AddIndex{Commit: k, Object: *v2}); err != nil {
+				return nil, err
+			}
+			if err := zs.Write(&DeleteIndex{Commit: k, ID: v2.ID, RuleID: v2.Rule.RuleID()}); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if err := zs.Close(); err != nil {
+		return nil, err
+	}
+	return zs.Bytes(), nil
+}
+
+func decodeSnapshot(r io.Reader) (*Snapshot, error) {
+	s := NewSnapshot()
+	zd := zngbytes.NewDeserializer(r, ActionTypes)
+	for {
+		entry, err := zd.Read()
+		if err != nil {
+			return nil, err
+		}
+		if entry == nil {
+			return s, nil
+		}
+		action, ok := entry.(Action)
+		if !ok {
+			return nil, fmt.Errorf("internal error: corrupt snapshot contains unknown entry type %T", entry)
+		}
+		if err := PlayAction(s, action); err != nil {
+			return nil, err
+		}
+	}
 }
 
 type DataObjects []*data.Object
