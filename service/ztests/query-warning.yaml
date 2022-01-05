@@ -1,0 +1,18 @@
+script: |
+  source service.sh
+  zed create -q test
+  zed load -q -use test@main -
+  zed query -z 'from test | sort b'
+
+inputs:
+  - name: service.sh
+  - name: stdin
+    data: &stdin |
+      {a:1}
+
+outputs:
+  - name: stdout
+    data: *stdin
+  - name: stderr
+    data: |
+      warning: sort field "b" not present in input

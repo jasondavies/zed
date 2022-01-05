@@ -2,6 +2,8 @@ package query
 
 import (
 	"flag"
+	"io"
+	"os"
 
 	"github.com/brimdata/zed/cli"
 	"github.com/brimdata/zed/cli/lakeflags"
@@ -65,6 +67,11 @@ func (c *Command) Run(args []string) error {
 	if err != nil {
 		return err
 	}
+	warnings := io.Writer(os.Stderr)
+	if c.lakeFlags.Quiet {
+		warnings = io.Discard
+	}
+	w = zio.WarningFilterWithWriter(w, warnings)
 	head, _ := c.lakeFlags.HEAD()
 	query, err := lake.QueryWithControl(ctx, head, src, c.queryFlags.Includes...)
 	if err != nil {

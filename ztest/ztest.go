@@ -529,6 +529,7 @@ func runzq(path, zedProgram, input string, outputFlags []string, inputFlags []st
 	if err != nil {
 		return "", "", err
 	}
+	zw = zio.WarningFilterWithWriter(zw, &errbuf)
 	q, err := zruntime.NewQueryOnReader(context.Background(), zctx, proc, zr, nil)
 	if err != nil {
 		zw.Close()

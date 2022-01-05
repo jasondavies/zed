@@ -3,6 +3,8 @@ package zq
 import (
 	"flag"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/brimdata/zed"
 	"github.com/brimdata/zed/cli"
@@ -144,6 +146,11 @@ func (c *Command) Run(args []string) error {
 	if err != nil {
 		return err
 	}
+	warnings := io.Writer(os.Stderr)
+	if c.quiet {
+		warnings = io.Discard
+	}
+	writer = zio.WarningFilterWithWriter(writer, warnings)
 	query, err := runtime.NewQueryOnFileSystem(ctx, zctx, flowgraph, readers, cli.NewFileAdaptor(local))
 	if err != nil {
 		return err

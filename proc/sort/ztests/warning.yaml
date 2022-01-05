@@ -9,4 +9,6 @@ output: |
   {foo:2}
   {foo:100}
   {foo:9100}
-  "warning: sort field \"bar\" not present in input"(error)
+
+warnings: |
+  warning: sort field "bar" not present in input

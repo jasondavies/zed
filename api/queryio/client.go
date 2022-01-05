@@ -38,6 +38,9 @@ func (q *Query) Read() (*zed.Value, error) {
 		if err := unmarshaler.Unmarshal(value, &v); err != nil {
 			return nil, err
 		}
+		if v, ok := v.(*api.QueryWarning); ok {
+			return zed.NewErrorf("%s", v.Warning), nil
+		}
 		return nil, controlToError(v)
 	}
 	return val, err

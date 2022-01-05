@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/brimdata/zed"
 	"github.com/brimdata/zed/api"
 	"github.com/brimdata/zed/pkg/nano"
 	"github.com/brimdata/zed/zbuf"
@@ -53,7 +54,7 @@ func (w *Writer) WriteBatch(cid int, batch zbuf.Batch) error {
 		}
 	}
 	defer batch.Unref()
-	return zbuf.WriteBatch(w.writer, batch)
+	return zbuf.WriteBatch(zio.WarningFilter(w.writer, w.WriteWarning), batch)
 }
 
 func (w *Writer) WhiteChannelEnd(channelID int) error {
@@ -71,6 +72,10 @@ func (w *Writer) WriteProgress(stats zbuf.Progress) error {
 
 func (w *Writer) WriteError(err error) {
 	w.WriteControl(api.QueryError{err.Error()})
+}
+
+func (w *Writer) WriteWarning(warning *zed.Value) error {
+	return w.WriteControl(api.QueryWarning{string(warning.Bytes)})
 }
 
 func (w *Writer) WriteControl(value interface{}) error {
