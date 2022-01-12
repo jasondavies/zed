@@ -40,7 +40,8 @@ func replaceStringEscape(in []byte) []byte {
 	}
 	for ; i < len(in) && in[i] != '}'; i++ {
 		r <<= 4
-		r |= rune(zed.Unhex(in[i]))
+		v, _ := zed.Unhex(in[i])
+		r |= rune(v)
 	}
 	return []byte(string(r))
 }

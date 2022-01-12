@@ -3,7 +3,7 @@ zed: '*'
 input: |
   {_path:"",foo:"😁"(bstring)}
   {_path:"magic",foo:"😁"(bstring)}
-  {_path:"",foo:"foo😁bar\x00\x01baz"(bstring)}
+  {_path:"",foo:"foo😁bar\u0000\u0001baz"(bstring)}
 
 output-flags: -f zeek
 

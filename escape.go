@@ -88,8 +88,8 @@ func UnescapeBstring(data []byte) []byte {
 
 func parseBstringEscape(data []byte) (byte, int) {
 	if len(data) >= 4 && data[1] == 'x' {
-		v1 := Unhex(data[2])
-		v2 := Unhex(data[3])
+		v1, _ := Unhex(data[2])
+		v2, _ := Unhex(data[3])
 		if v1 <= 0xf || v2 <= 0xf {
 			return v1<<4 | v2, 4
 		}
@@ -101,14 +101,14 @@ func parseBstringEscape(data []byte) (byte, int) {
 	return data[0], 1
 }
 
-func Unhex(b byte) byte {
+func Unhex(b byte) (byte, bool) {
 	switch {
 	case '0' <= b && b <= '9':
-		return b - '0'
+		return b - '0', true
 	case 'a' <= b && b <= 'f':
-		return b - 'a' + 10
+		return b - 'a' + 10, true
 	case 'A' <= b && b <= 'F':
-		return b - 'A' + 10
+		return b - 'A' + 10, true
 	}
-	return 255
+	return 255, false
 }

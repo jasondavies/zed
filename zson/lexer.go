@@ -268,20 +268,16 @@ func (l *Lexer) scanString() (string, error) {
 		}
 		l.skip(1)
 		if c == '\n' {
-			return "", errors.New("unescaped linebreak in string literal")
+			return "", errors.New("unescaped line break")
 		}
 		if c == '\\' {
 			c, err = l.readByte()
 			if err != nil {
-				if err == io.EOF {
-					err = errors.New("unterminated string")
-				}
 				return "", err
 			}
-			//XXX what about \u{}
 			switch c {
-			case '"', '\\', '/': // nothing
-
+			case '"', '\\', '/':
+				// Nothing to do.
 			case 'b':
 				c = '\b'
 			case 'f':
@@ -292,8 +288,21 @@ func (l *Lexer) scanString() (string, error) {
 				c = '\r'
 			case 't':
 				c = '\t'
+			case 'u':
+				c = 0
+				for i := 0; i < 4; i++ {
+					hexdigit, err := l.readByte()
+					if err != nil {
+						return "", err
+					}
+					v, ok := zed.Unhex(hexdigit)
+					if !ok {
+						return "", errors.New(`bad \uXXXX escape sequence`)
+					}
+					c = (c << 4) | v
+				}
 			default:
-				s.WriteByte('\\')
+				return "", errors.New(`bad \C escape sequence`)
 			}
 		}
 		s.WriteByte(c)

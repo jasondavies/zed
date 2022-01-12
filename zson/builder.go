@@ -169,8 +169,8 @@ func unescapeHex(in []byte) []byte {
 	for i < len(in) {
 		c := in[i]
 		if c == '\\' && len(in[i:]) >= 4 && in[i+1] == 'x' {
-			v1 := zed.Unhex(in[i+2])
-			v2 := zed.Unhex(in[i+3])
+			v1, _ := zed.Unhex(in[i+2])
+			v2, _ := zed.Unhex(in[i+3])
 			// This is undefined behavior for non hex \x chars.
 			c = v1<<4 | v2
 			i += 4
