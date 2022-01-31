@@ -1,9 +1,9 @@
 zed: '*'
 
 input: |
-  {ja3s:null(int32)}
+  {"schema":"30","types":[{"kind":"typedef","name":"30","type":{"kind":"record","fields":[{"name":"ja3s","type":{"kind":"primitive","name":"int32"}}]}}],"values":[null]}
 
 output-flags: -f zjson
 
 output: |
-  {"type":{"kind":"record","id":30,"fields":[{"name":"ja3s","type":{"kind":"primitive","name":"int32"}}]},"value":[null]}
+  {"schema":"30","types":[{"kind":"typedef","name":"30","type":{"kind":"record","fields":[{"name":"ja3s","type":{"kind":"primitive","name":"int32"}}]}}],"values":[null]}

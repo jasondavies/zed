@@ -6,4 +6,4 @@ input: |
 output-flags: -f zjson
 
 output: |
-  {"type":{"kind":"record","id":30,"fields":[{"name":"typeof","type":{"kind":"primitive","name":"type"}},{"name":"count","type":{"kind":"primitive","name":"uint64"}}]},"value":[{"kind":"named","id":32,"name":"myrecord","type":{"kind":"record","id":31,"fields":[{"name":"a","type":{"kind":"primitive","name":"int64"}}]}},"1"]}
+  {"schema":"30","types":[{"kind":"typedef","name":"30","type":{"kind":"record","fields":[{"name":"typeof","type":{"kind":"primitive","name":"type"}},{"name":"count","type":{"kind":"primitive","name":"uint64"}}]}},{"kind":"typedef","name":"myrecord","type":{"kind":"record","fields":[{"name":"a","type":{"kind":"primitive","name":"int64"}}]}}],"values":["myrecord","1"]}

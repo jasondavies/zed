@@ -7,8 +7,7 @@ input: |
   {"type":{"kind":"ref","id":34},"value":[["3",["0","123"]]]}
 
 output: |
-  {a:"\"hello\""((string,[int32],[string],(int32,string)))}
-  {a:[1(int32),2(int32)]((string,[int32],[string],(int32,string)))}
-  {a:["\"a\"","\"b\""]((string,[int32],[string],(int32,string)))}
-  {a:123(int32)((int32,string))((string,[int32],[string],(int32,string)))}
-
+  {type:{kind:"record",id:34,fields:[{name:"a",type:{kind:"union",id:33,types:[{kind:"primitive",name:"string"}(({kind:string,name:string},{kind:string,id:int64,type:{kind:string,name:string}},{kind:string,id:int64,types:[{kind:string,name:string}]})),{kind:"array",id:30,type:{kind:"primitive",name:"int32"}}(({kind:string,name:string},{kind:string,id:int64,type:{kind:string,name:string}},{kind:string,id:int64,types:[{kind:string,name:string}]})),{kind:"array",id:31,type:{kind:"primitive",name:"string"}}(({kind:string,name:string},{kind:string,id:int64,type:{kind:string,name:string}},{kind:string,id:int64,types:[{kind:string,name:string}]})),{kind:"union",id:32,types:[{kind:"primitive",name:"string"},{kind:"primitive",name:"int32"}]}(({kind:string,name:string},{kind:string,id:int64,type:{kind:string,name:string}},{kind:string,id:int64,types:[{kind:string,name:string}]}))]}}]},value:[["0","\"hello\""]]}
+  {type:{kind:"ref",id:34},value:[["1"((string,[string])),["1","2"]((string,[string]))]]}
+  {type:{kind:"ref",id:34},value:[["2"((string,[string])),["\"a\"","\"b\""]((string,[string]))]]}
+  {type:{kind:"ref",id:34},value:[["3"((string,[string])),["0","123"]((string,[string]))]]}
