@@ -3,7 +3,6 @@ package zbuf
 import (
 	"context"
 	"fmt"
-	"io"
 	"sync/atomic"
 
 	"github.com/brimdata/zed"
@@ -31,11 +30,6 @@ type Meter interface {
 type Scanner interface {
 	Meter
 	Puller
-}
-
-type ScannerCloser interface {
-	Scanner
-	io.Closer
 }
 
 // Progress represents progress statistics from a Scanner.
