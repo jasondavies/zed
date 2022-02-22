@@ -105,25 +105,17 @@ func (r *RemoteSession) Revert(ctx context.Context, poolID ksuid.KSUID, branchNa
 }
 
 type queryReader struct {
-	reader zio.Reader
-	res    *client.Response
+	zio.ReadCloser
+	bodyCloser io.Closer
 }
 
-var _ zio.Reader = (*queryReader)(nil)
-
-func (q *queryReader) Read() (*zed.Value, error) {
-	val, err := q.reader.Read()
-	if val == nil || err != nil {
-		if _, ok := err.(*zbuf.Control); !ok {
-			if closeErr := q.res.Body.Close(); err == nil {
-				err = closeErr
-			}
-		}
-	}
-	return val, err
+func (q *queryReader) Close() error {
+	err := q.ReadCloser.Close()
+	q.bodyCloser.Close()
+	return err
 }
 
-func (r *RemoteSession) Query(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zio.Reader, error) {
+func (r *RemoteSession) Query(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zio.ReadCloser, error) {
 	q, err := r.QueryWithControl(ctx, head, src, srcfiles...)
 	if err != nil {
 		return nil, err
@@ -131,7 +123,7 @@ func (r *RemoteSession) Query(ctx context.Context, head *lakeparse.Commitish, sr
 	return zbuf.NoControl(q), nil
 }
 
-func (r *RemoteSession) QueryWithControl(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zbuf.ProgressReader, error) {
+func (r *RemoteSession) QueryWithControl(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zbuf.ProgressReadCloser, error) {
 	res, err := r.conn.Query(ctx, head, src, srcfiles...)
 	if err != nil {
 		return nil, err
@@ -140,7 +132,7 @@ func (r *RemoteSession) QueryWithControl(ctx context.Context, head *lakeparse.Co
 	if err != nil {
 		return nil, err
 	}
-	return zbuf.MeterReader(&queryReader{reader, res}), nil
+	return zbuf.MeterReader(&queryReader{reader, res.Body}), nil
 }
 
 func (r *RemoteSession) Delete(ctx context.Context, poolID ksuid.KSUID, branchName string, tags []ksuid.KSUID, commit api.CommitMessage) (ksuid.KSUID, error) {

@@ -3,6 +3,7 @@ package zbuf
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync/atomic"
 
 	"github.com/brimdata/zed"
@@ -153,4 +154,23 @@ func (n *namedScanner) Pull(done bool) (Batch, error) {
 		err = fmt.Errorf("%s: %w", n.name, err)
 	}
 	return b, err
+}
+
+func ScannerCloser(s Scanner, c io.Closer) Scanner {
+	return &scannerCloser{s, c}
+}
+
+type scannerCloser struct {
+	Scanner
+	c io.Closer
+}
+
+func (s *scannerCloser) Pull(done bool) (Batch, error) {
+	batch, err := s.Scanner.Pull(done)
+	if batch == nil {
+		if err2 := s.c.Close(); err == nil {
+			err = err2
+		}
+	}
+	return batch, nil
 }

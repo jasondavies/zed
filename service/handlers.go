@@ -52,6 +52,7 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 		w.Error(err)
 		return
 	}
+	defer flowgraph.Pull(true)
 	flusher, _ := w.ResponseWriter.(http.Flusher)
 	writer, err := queryio.NewWriter(zio.NopCloser(w), format, flusher)
 	if err != nil {
@@ -64,7 +65,6 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 	defer writer.Close()
 	timer := time.NewTicker(queryStatsInterval)
 	defer timer.Stop()
-	meter := flowgraph.Meter()
 	for {
 		var tick bool
 		select {
@@ -80,7 +80,7 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 			return
 		}
 		if batch == nil || tick {
-			if err := writer.WriteProgress(meter.Progress()); err != nil {
+			if err := writer.WriteProgress(flowgraph.Progress()); err != nil {
 				writer.WriteError(err)
 				return
 			}

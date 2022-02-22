@@ -14,6 +14,7 @@ import (
 	"github.com/brimdata/zed/pkg/field"
 	"github.com/brimdata/zed/pkg/storage"
 	"github.com/brimdata/zed/runtime"
+	"github.com/brimdata/zed/zbuf"
 	"github.com/brimdata/zed/zio"
 	"github.com/brimdata/zed/zio/zsonio"
 	"github.com/brimdata/zed/zson"
@@ -119,7 +120,8 @@ func TestNearest(t *testing.T) {
 	})
 	q, err := runtime.NewQueryOnReader(context.Background(), zed.NewContext(), compiler.MustParseProc("sort ts"), reader(records), nil)
 	require.NoError(t, err)
-	asc := buildAndOpen(t, engine, q.AsReader(), field.DottedList("ts"), index.Order(order.Asc))
+	defer q.Pull(true)
+	asc := buildAndOpen(t, engine, zbuf.PullerReader(q), field.DottedList("ts"), index.Order(order.Asc))
 	t.Run("Ascending", func(t *testing.T) {
 		for _, c := range cases {
 			runtest(t, asc, ">", c.value, c.gt)

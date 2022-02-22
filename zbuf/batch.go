@@ -114,7 +114,7 @@ func CopyPuller(w zio.Writer, p Puller) error {
 	}
 }
 
-func PullerReader(p Puller) zio.Reader {
+func PullerReader(p Puller) zio.ReadCloser {
 	return &pullerReader{p: p}
 }
 
@@ -123,6 +123,11 @@ type pullerReader struct {
 	batch Batch
 	idx   int
 	val   zed.Value
+}
+
+func (r *pullerReader) Close() error {
+	_, err := r.p.Pull(true)
+	return err
 }
 
 func (r *pullerReader) Read() (*zed.Value, error) {

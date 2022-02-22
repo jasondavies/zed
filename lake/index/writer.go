@@ -7,6 +7,7 @@ import (
 
 	"github.com/brimdata/zed"
 	"github.com/brimdata/zed/compiler"
+	"github.com/brimdata/zed/zbuf"
 
 	"github.com/brimdata/zed/index"
 	"github.com/brimdata/zed/pkg/storage"
@@ -99,7 +100,7 @@ func (a *onceError) Load() error {
 
 type indexer struct {
 	err   onceError
-	query *runtime.Query
+	query zbuf.Puller
 	index *index.Writer
 	wg    sync.WaitGroup
 }
@@ -131,7 +132,7 @@ func (d *indexer) start() {
 	d.wg.Add(1)
 	go func() {
 		defer d.query.Pull(true)
-		if err := zio.Copy(d, d.query.AsReader()); err != nil {
+		if err := zbuf.CopyPuller(d, d.query); err != nil {
 			d.index.Abort()
 			d.err.Store(err)
 		}

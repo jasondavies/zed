@@ -14,7 +14,7 @@ import (
 // File provides a means to write a sequence of zng records to temporary
 // storage then read them back.  This is used for processing large batches of
 // data that do not fit in memory and/or cannot be shuffled to a peer worker,
-// but can be processed in multiple passes.  File implements zio.Reader and
+// but can be processed in multiple passes.  File implements zio.ReadCloser and
 // zio.Writer.
 type File struct {
 	*zngio.Reader

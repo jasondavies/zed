@@ -24,6 +24,8 @@ func NewQuery(res *client.Response) *Query {
 	}
 }
 
+func (q *Query) Close() error { return q.reader.Close() }
+
 func (q *Query) Read() (*zed.Value, error) {
 	val, ctrl, err := q.reader.ReadPayload()
 	if ctrl != nil {

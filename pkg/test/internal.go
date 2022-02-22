@@ -9,6 +9,7 @@ import (
 	"github.com/brimdata/zed"
 	"github.com/brimdata/zed/compiler"
 	"github.com/brimdata/zed/runtime"
+	"github.com/brimdata/zed/zbuf"
 	"github.com/brimdata/zed/zio"
 	"github.com/brimdata/zed/zio/anyio"
 	"github.com/brimdata/zed/zio/emitter"
@@ -62,7 +63,8 @@ func (i *Internal) Run() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := zio.Copy(output, q.AsReader()); err != nil {
+	defer q.Pull(true)
+	if err := zbuf.CopyPuller(output, q); err != nil {
 		return "", err
 	}
 	return string(output.Bytes()), nil
