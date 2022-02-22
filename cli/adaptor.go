@@ -59,8 +59,18 @@ func (f *FileAdaptor) Open(ctx context.Context, zctx *zed.Context, path string, 
 		return nil, err
 	}
 	sn := zbuf.NamedScanner(scanner, path)
-	return &struct {
-		zbuf.Scanner
-		io.Closer
-	}{sn, file}, nil
+	return &closingPuller{sn, file}, nil
+}
+
+type closingPuller struct {
+	p zbuf.Puller
+	c io.Closer
+}
+
+func (c *closingPuller) Pull(done bool) (zbuf.Batch, error) {
+	batch, err := c.p.Pull(done)
+	if batch == nil {
+		c.c.Close()
+	}
+	return batch, err
 }
