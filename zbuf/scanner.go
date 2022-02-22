@@ -160,15 +160,3 @@ func (n *namedScanner) Pull(done bool) (Batch, error) {
 	}
 	return b, err
 }
-
-func ScannerNopCloser(s Scanner) *nopCloser {
-	return &nopCloser{s}
-}
-
-type nopCloser struct {
-	Scanner
-}
-
-func (n *nopCloser) Close() error {
-	return nil
-}
