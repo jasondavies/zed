@@ -15,7 +15,14 @@ import (
 	"github.com/brimdata/zed/zson"
 )
 
+func FormatValue(val zed.Value) string {
+	return formatAny(val, false)
+}
+
 func formatAny(zv zed.Value, inContainer bool) string {
+	if zv.Bytes == nil {
+		return "-"
+	}
 	switch t := zv.Type.(type) {
 	case *zed.TypeArray:
 		return formatArray(t, zv.Bytes)
@@ -61,9 +68,9 @@ func formatAny(zv zed.Value, inContainer bool) string {
 	case *zed.TypeOfTime:
 		// This format of a fractional second is used by Zeek in logs.
 		// It uses enough precision to fully represent the 64-bit ns
-		// accuracy of a nano.Ts.  Such values cannot be representd by
+		// accuracy of a nano.Ts.  Such values cannot be represented by
 		// float64's without loss of the least significant digits of ns.
-		return zed.DecodeTime(zv.Bytes).StringFloat()
+		return formatTime(zed.DecodeTime(zv.Bytes))
 	case *zed.TypeOfType:
 		return zson.String(zv)
 	case *zed.TypeUnion:
@@ -197,6 +204,14 @@ func unescape(r rune) []byte {
 	return b.Bytes()
 }
 
+func formatTime(ts nano.Ts) string {
+	precision := 6
+	if _, ns := ts.Split(); (ns/1000)*1000 != ns {
+		precision = 9
+	}
+	return string(ts.AppendFloat(nil, precision))
+}
+
 func formatUnion(t *zed.TypeUnion, zv zcode.Bytes) string {
 	if zv == nil {
 		return FormatValue(zed.Value{zed.TypeNull, nil})
@@ -204,11 +219,4 @@ func formatUnion(t *zed.TypeUnion, zv zcode.Bytes) string {
 	typ, iv := t.SplitZNG(zv)
 	s := strconv.FormatInt(int64(t.Selector(typ)), 10) + ":"
 	return s + formatAny(zed.Value{typ, iv}, false)
-}
-
-func FormatValue(v zed.Value) string {
-	if v.Bytes == nil {
-		return "-"
-	}
-	return formatAny(v, false)
 }

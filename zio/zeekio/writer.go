@@ -1,17 +1,18 @@
 package zeekio
 
 import (
+	"bytes"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/nano"
 	"github.com/brimdata/zed/runtime/expr"
 )
 
 type Writer struct {
 	writer io.WriteCloser
+
+	buf bytes.Buffer
 	header
 	flattener *expr.Flattener
 	typ       *zed.TypeRecord
@@ -40,16 +41,22 @@ func (w *Writer) Write(r *zed.Value) error {
 		}
 		w.typ = zed.TypeRecordOf(r.Type)
 	}
-	values, err := ZeekStrings(r)
-	if err != nil {
-		return err
+	w.buf.Reset()
+	var sep bool
+	it := r.Bytes.Iter()
+	for _, col := range zed.TypeRecordOf(r.Type).Columns {
+		bytes := it.Next()
+		if col.Name == "_path" {
+			continue
+		}
+		if sep {
+			w.buf.WriteByte('\t')
+		}
+		sep = true
+		w.buf.WriteString(FormatValue(zed.Value{Type: col.Type, Bytes: bytes}))
 	}
-	if i, ok := r.ColumnOfField("_path"); ok {
-		// delete _path column
-		values = append(values[:i], values[i+1:]...)
-	}
-	out := strings.Join(values, "\t") + "\n"
-	_, err = w.writer.Write([]byte(out))
+	w.buf.WriteByte('\n')
+	_, err = w.writer.Write(w.buf.Bytes())
 	return err
 }
 
@@ -103,33 +110,4 @@ func (w *Writer) writeHeader(r *zed.Value, path string) error {
 	}
 	_, err := w.writer.Write([]byte(s))
 	return err
-}
-
-func isHighPrecision(ts nano.Ts) bool {
-	_, ns := ts.Split()
-	return (ns/1000)*1000 != ns
-}
-
-// This returns the zeek strings for this record.  XXX We need to not use this.
-// XXX change to Pretty for output writers?... except zeek?
-func ZeekStrings(r *zed.Value) ([]string, error) {
-	var ss []string
-	it := r.Bytes.Iter()
-	for _, col := range zed.TypeRecordOf(r.Type).Columns {
-		var field string
-		if val := it.Next(); val == nil {
-			field = "-"
-		} else if col.Type == zed.TypeTime {
-			ts := zed.DecodeTime(val)
-			precision := 6
-			if isHighPrecision(ts) {
-				precision = 9
-			}
-			field = string(ts.AppendFloat(nil, precision))
-		} else {
-			field = formatAny(zed.Value{col.Type, val}, false)
-		}
-		ss = append(ss, field)
-	}
-	return ss, nil
 }
