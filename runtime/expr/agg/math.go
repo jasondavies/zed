@@ -13,11 +13,12 @@ import (
 type consumer interface {
 	result() *zed.Value
 	consume(*zed.Value)
+	typ() zed.Type
 }
 
 type mathReducer struct {
 	function *anymath.Function
-	typ      zed.Type
+	hasval   bool
 	math     consumer
 	pair     coerce.Pair
 
@@ -33,11 +34,11 @@ func newMathReducer(f *anymath.Function) *mathReducer {
 }
 
 func (m *mathReducer) Result(zctx *zed.Context) *zed.Value {
-	if m.math == nil {
-		if m.typ == nil {
+	if !m.hasval {
+		if m.math == nil {
 			return zed.Null
 		}
-		return &zed.Value{Type: m.typ}
+		return &zed.Value{Type: m.math.typ()}
 	}
 	return m.math.result()
 }
@@ -47,20 +48,26 @@ func (m *mathReducer) Consume(val *zed.Value) {
 }
 
 func (m *mathReducer) consumeVal(val *zed.Value) {
-	changed, ok := m.updateType(val)
-	if !ok {
-		// Skip invalid types.
-		return
+	var id int
+	if m.math != nil {
+		var err error
+		// XXX We're not using the value coercion parts of coerce.Pair here.
+		// Would be better if coerce had a function that just compared types
+		// and returned the type to coerce to.
+		id, err = m.pair.Coerce(&m.nilVal, val)
+		if err != nil {
+			// Skip invalid values.
+			return
+		}
+	} else {
+		id = val.Type.ID()
 	}
-	if val.IsNull() {
-		return
-	}
-	if changed || m.math == nil {
+	if m.math == nil || m.math.typ().ID() != id {
 		state := zed.Null
 		if m.math != nil {
 			state = m.math.result()
 		}
-		switch m.typ.ID() {
+		switch id {
 		case zed.IDInt8, zed.IDInt16, zed.IDInt32, zed.IDInt64:
 			m.math = NewInt64(m.function, state)
 		case zed.IDUint8, zed.IDUint16, zed.IDUint32, zed.IDUint64:
@@ -75,28 +82,13 @@ func (m *mathReducer) consumeVal(val *zed.Value) {
 			// Ignore types we can't handle.
 			return
 		}
+		m.nilVal.Type = m.math.typ()
 	}
+	if val.IsNull() {
+		return
+	}
+	m.hasval = true
 	m.math.consume(val)
-}
-
-func (m *mathReducer) updateType(val *zed.Value) (bool, bool) {
-	id := val.Type.ID()
-	if m.typ != nil {
-		var err error
-		// XXX We're not using the value coercion parts of coerce.Pair here.
-		// Would be better if coerce had a function that just compared types
-		// and returned the type to coerce to.
-		id, err = m.pair.Coerce(&m.nilVal, val)
-		if err != nil {
-			return false, false
-		}
-	}
-	if m.typ == nil || id != m.typ.ID() {
-		m.typ = zed.LookupPrimitiveByID(id)
-		m.nilVal.Type = m.typ
-		return true, true
-	}
-	return false, true
 }
 
 func (m *mathReducer) ResultAsPartial(*zed.Context) *zed.Value {
@@ -137,6 +129,8 @@ func (f *Float64) consume(val *zed.Value) {
 	}
 }
 
+func (f *Float64) typ() zed.Type { return zed.TypeFloat64 }
+
 type Int64 struct {
 	state    int64
 	function anymath.Int64
@@ -166,6 +160,8 @@ func (i *Int64) consume(val *zed.Value) {
 		i.state = i.function(i.state, v)
 	}
 }
+
+func (f *Int64) typ() zed.Type { return zed.TypeInt64 }
 
 type Uint64 struct {
 	state    uint64
@@ -197,6 +193,8 @@ func (u *Uint64) consume(val *zed.Value) {
 	}
 }
 
+func (f *Uint64) typ() zed.Type { return zed.TypeUint64 }
+
 type Duration struct {
 	state    int64
 	function anymath.Int64
@@ -227,6 +225,8 @@ func (d *Duration) consume(val *zed.Value) {
 	}
 }
 
+func (f *Duration) typ() zed.Type { return zed.TypeDuration }
+
 type Time struct {
 	state    nano.Ts
 	function anymath.Int64
@@ -256,6 +256,8 @@ func (t *Time) consume(val *zed.Value) {
 		t.state = nano.Ts(t.function(int64(t.state), int64(v)))
 	}
 }
+
+func (f *Time) typ() zed.Type { return zed.TypeTime }
 
 func panicCoercionFail(to, from zed.Type) {
 	panic(fmt.Sprintf("internal aggregation error: cannot coerce %s to %s", zson.String(from), zson.String(to)))
